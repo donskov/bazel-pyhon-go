@@ -1,0 +1,74 @@
+load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
+load("@pip//:requirements.bzl", "all_whl_requirements")
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("@rules_python_gazelle_plugin//:def.bzl", "GAZELLE_PYTHON_RUNTIME_DEPS")
+load("@rules_python_gazelle_plugin//manifest:defs.bzl", "gazelle_python_manifest")
+load("@rules_python_gazelle_plugin//modules_mapping:def.bzl", "modules_mapping")
+
+# This rule fetches the metadata for python packages we depend on. That data is
+# required for the gazelle_python_manifest rule to update our manifest file.
+modules_mapping(
+    name = "modules_map",
+    wheels = all_whl_requirements,
+)
+
+# Gazelle python extension needs a manifest file mapping from
+# an import to the installed package that provides it.
+# This macro produces two targets:
+# - //:gazelle_python_manifest.update can be used with `bazel run`
+#   to recalculate the manifest
+# - //:gazelle_python_manifest.test is a test target ensuring that
+#   the manifest doesn't need to be updated
+gazelle_python_manifest(
+    name = "gazelle_python_manifest",
+    modules_mapping = ":modules_map",
+    pip_repository_name = "pip",
+    requirements = "//:requirements_lock.txt",
+)
+
+# gazelle:prefix github.com/donskov/bazel-pyhon-go
+gazelle(
+    name = "gazelle",
+    data = GAZELLE_PYTHON_RUNTIME_DEPS,
+    gazelle = "//:gazelle_binary",
+    visibility = ["//visibility:public"],
+)
+
+gazelle_binary(
+    name = "gazelle_binary",
+    languages = DEFAULT_LANGUAGES + [
+        "@rules_python_gazelle_plugin//python",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+gazelle(
+    name = "gazelle-update-repos",
+    args = [
+        "-from_file=go.mod",
+        "-to_macro=deps.bzl%go_dependencies",
+        "-prune",
+    ],
+    command = "update-repos",
+)
+
+# To update, run:
+#
+#    bazel run //:requirements.update
+compile_pip_requirements(
+    name = "requirements",
+    extra_args = [
+        "--generate-hashes",
+        "--allow-unsafe",
+    ],
+    requirements_in = "requirements.in",
+    requirements_txt = "requirements_lock.txt",
+)
+
+py_binary(
+    name = "main",
+    srcs = ["projects/python_server/main.py"],
+    visibility = ["//:__subpackages__"],
+    deps = ["@pip//flask"],
+)

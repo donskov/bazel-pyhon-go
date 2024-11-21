@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_server_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/donskov/bazel-pyhon-go/projects/go_server",
+    visibility = ["//visibility:private"],
+    deps = ["@com_github_gorilla_mux//:mux"],
+)
+
+go_binary(
+    name = "go_server",
+    embed = [":go_server_lib"],
+    visibility = ["//visibility:public"],
+)

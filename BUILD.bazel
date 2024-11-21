@@ -1,6 +1,5 @@
 load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
 load("@pip//:requirements.bzl", "all_whl_requirements")
-load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@rules_python_gazelle_plugin//:def.bzl", "GAZELLE_PYTHON_RUNTIME_DEPS")
 load("@rules_python_gazelle_plugin//manifest:defs.bzl", "gazelle_python_manifest")
@@ -64,11 +63,4 @@ compile_pip_requirements(
     ],
     requirements_in = "requirements.in",
     requirements_txt = "requirements_lock.txt",
-)
-
-py_binary(
-    name = "main",
-    srcs = ["projects/python_server/main.py"],
-    visibility = ["//:__subpackages__"],
-    deps = ["@pip//flask"],
 )
